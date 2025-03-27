@@ -1,1 +1,1 @@
-# Âmazing RL-VAE based model for Topic Modeling
+# Amazing RL-VAE based model for Topic Modeling
