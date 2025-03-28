@@ -60,8 +60,6 @@ class Environment():
         return mean_embedding # shape: (1, 768)
     
     def get_k_top_words(self, input, testing = False):
-        
-
         new_docs = [input]
         parsed_new_docs, new_bow = self.preprocess.parse(new_docs, vocab=self.dataset.vocab)
 
