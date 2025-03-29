@@ -16,9 +16,9 @@ def save_model(model, model_name = "model_weights", save_dir = "saved_model"):
 
 
 def load_model(model, model_name = "model_weights", save_dir = "saved_model", device = "cuda"):
-    model.load_state_dict(torch.load(save_dir + "/model_weights.pth", weights_only=True))
+    model.load_state_dict(torch.load(save_dir + "/" + model_name + ".pth", weights_only=True))
 
     # Nếu dùng GPU mà muốn chạy trên CPU
-    model.to("cuda")  # Nếu cần chuyển về CPU
+    model.to(device)  # Nếu cần chuyển về CPU
 
     return model

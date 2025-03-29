@@ -70,29 +70,34 @@ class Policy_VAE(nn.Module):
         x_norm = x / x.sum(1, keepdim = True)
         mu, logvar = self.encode(x_norm)
 
-        wd = self.reparameterize(mu, logvar)
+        wd = torch.nn.functional.softmax(self.reparameterize(mu, logvar), dim = 1)
 
         recon_x = torch.matmul(wd, self.construct)
 
         loss = self.loss_vae(x, recon_x, mu, logvar)
 
-        return torch.nn.functional.softmax(wd), loss
+        return wd, loss
     
     def act(self, state):
         probs, loss_vae = self.forward(state)
-        
+        # print("state in act policy: ", state)
         m = Categorical(probs)
         action = m.sample()
         
         word = self.vocab[action.item()]
         
-        loss = loss_vae + self.loss_contrastive(state, self.env.get_embedding(word))
+        loss = loss_vae + self.loss_contrastive(self.env.get_embedding(word), state)
         
         return self.vocab[action.item()], m.log_prob(action), loss
 
     def loss_contrastive(self, z, state, temperature = 0.07):
+        # print("state: ", state)
+        # print("doc_embed shape:", state["doc_embed"].shape)
+        # print("mean_topic_embeds shape:", state["mean_topic_embeds"].shape)
         z_pos = state["doc_embed"]
         z_neg = state["mean_topic_embeds"]
+
+        
 
         sim_pos = F.cosine_similarity(z, z_pos, dim=-1) / temperature
         sim_neg = F.cosine_similarity(z, z_neg, dim=-1) / temperature
@@ -103,6 +108,7 @@ class Policy_VAE(nn.Module):
     
     def loss_vae(self, x, recon_x, mu, logvar):
         recon_loss = F.mse_loss(x, recon_x)
+        # print(((x - recon_x)*(x - recon_x)).sum() / 768)
         KLD = -0.5 * (1 + logvar - mu ** 2 - logvar.exp()).sum(1)
 
         if self.debug_mode:

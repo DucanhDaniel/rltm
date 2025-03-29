@@ -7,16 +7,16 @@ import numpy as np
 import random
 
 class Environment():
-    def __init__(self, dataset : topmost.data.basic_dataset.BasicDataset, topic_model: topmost.ETM, device):
+    def __init__(self, dataset : topmost.data.basic_dataset.BasicDataset, topic_model: topmost.ETM, num_top_words, device):
         self.list_train_text = dataset.train_texts
         self.tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
         self.bert_model = BertModel.from_pretrained("bert-base-uncased")
         self.topic_model = topic_model
         # self.topic_model_trainer = topic_model_trainer
         self.dataset = dataset
-        self.top_words_list = _utils.get_top_words(self.get_beta(), dataset.vocab, 20, verbose=False)
+        self.num_top_words = num_top_words
+        self.top_words_list = self.get_top_words(verbose=False)
         self.device = device
-        self.num_top_words = 15
         self.batch_size = 200
         self.preprocess = Preprocess(verbose=False)
 
