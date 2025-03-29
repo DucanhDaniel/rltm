@@ -101,10 +101,10 @@ class Environment():
         return self.state
     
     def calculate_reward(self, topic_embed):
-        reward = torch.tensor([0], dtype = torch.float32)
+        reward = torch.zeros((1,), dtype = torch.float32)
         for item in self.k_top_words:
             reward -= self.cosine_similarity(topic_embed, item)
-        reward += self.cosine_similarity(topic_embed, self.state["doc_embed"])
+        reward += self.cosine_similarity(topic_embed, self.state["doc_embed"]) * len(self.k_top_words)
         return reward
     
     def step(self, action): # action is a word
@@ -125,7 +125,7 @@ class Environment():
             done = True
         reward = self.calculate_reward(topic_embed)
 
-        return self.state, reward, done
+        return self.state, reward.item(), done
     
     def print_current_state(self):
         print("### ENVIRONMENT STATE ###")

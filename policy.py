@@ -86,9 +86,9 @@ class Policy_VAE(nn.Module):
         
         word = self.vocab[action.item()]
         
-        loss = loss_vae + self.loss_contrastive(self.env.get_embedding(word), state)
+        # loss = loss_vae + self.loss_contrastive(self.env.get_embedding(word), state)
         
-        return self.vocab[action.item()], m.log_prob(action), loss
+        return word, m.log_prob(action)
 
     def loss_contrastive(self, z, state, temperature = 0.07):
         # print("state: ", state)
