@@ -6,46 +6,36 @@ import random
 from torch.distributions import Categorical
 import torch.nn.functional as F
 
-class Policy_VAE(nn.Module):
-    def __init__(self, vocab, env: Environment, pretrained_WE = None, n_hiddens = 1024, lazy_linear = True, embed_size = 768, dropout = 0.):
-        super().__init__()
-        self.n_hiddens = n_hiddens
-        self.lazy_linear = lazy_linear
-        self.embed_size = embed_size
-        self.vocab = vocab
-        self.vocab_size = len(vocab)
-        self.env = env
-        self.debug_mode = False
 
-        # Need to be replace with BERT embeddings
+class VAE(nn.Module):
+    def __init__(self, vocab_size, embed_size=768, n_hiddens=1024, dropout=0., pretrained_WE=None):
+        super(VAE, self).__init__()
+        self.vocab_size = vocab_size
+        self.embed_size = embed_size
+        self.n_hiddens = n_hiddens
+        
         if pretrained_WE is None:
             self.construct = nn.Parameter(torch.randn((self.vocab_size, embed_size)))
         else: 
             self.construct = nn.Parameter(torch.from_numpy(pretrained_WE).float())
-
-        self.initialize_model(dropout)
-
-    def initialize_model(self, dropout):
-        if self.lazy_linear:
-            self.encoder = nn.Sequential(
-                nn.LazyLinear(self.n_hiddens),
-                nn.ReLU(),
-                nn.LazyLinear(self.n_hiddens),
-                nn.ReLU(),
-                nn.Dropout(dropout)
-            )
-        else:
-            self.encoder = nn.Sequential(
-                nn.Linear(self.embed_size, self.n_hiddens),
-                nn.ReLU(),
-                nn.Linear(self.n_hiddens, self.n_hiddens),
-                nn.ReLU(),
-                nn.Dropout(dropout)
-            )
-
-        self.fc1 = nn.Linear(self.n_hiddens, self.vocab_size)
-        self.fc2 = nn.Linear(self.n_hiddens, self.vocab_size)
-
+            
+        # Encoder 
+        self.encoder = nn.Module(
+            nn.Linear(embed_size, n_hiddens),
+            nn.ReLU(),
+            nn.Linear(n_hiddens, n_hiddens),
+            nn.ReLU(),
+            nn.Dropout(dropout)
+        )
+        
+        # Latent space
+        self.fc1 = nn.Linear(n_hiddens, vocab_size) # Mean
+        self.fc2 = nn.Linear(n_hiddens, vocab_size) # Log variance
+        
+    def encode(self, x):
+        z = self.encoder(x)
+        return self.fc1(z), self.fc2(z)
+    
     def reparameterize(self, mu, log_var):
         if self.training:
             std = torch.exp(0.5 * log_var)
@@ -54,10 +44,16 @@ class Policy_VAE(nn.Module):
         else:
             return mu
         
-    def encode(self, x):
-        z = self.encoder(x)
 
-        return self.fc1(z), self.fc2(z)
+class Policy(nn.Module):
+    def __init__(self, vocab, env: Environment, vae: VAE):
+        super().__init__()
+        self.vocab = vocab
+        self.vocab_size = len(vocab)
+        self.env = env
+        self.vae = vae
+        self.debug_mode = False
+
         
     def merge_fn(self, state):
         doc_embed = state["doc_embed"]
@@ -68,11 +64,11 @@ class Policy_VAE(nn.Module):
         x = self.merge_fn(state)
 
         x_norm = x / x.sum(1, keepdim = True)
-        mu, logvar = self.encode(x_norm)
+        mu, logvar = self.vae.encode(x_norm)
 
         wd = torch.nn.functional.softmax(self.reparameterize(mu, logvar), dim = 1)
 
-        recon_x = torch.matmul(wd, self.construct)
+        recon_x = torch.matmul(wd, self.vae.construct)
 
         loss = self.loss_vae(x, recon_x, mu, logvar)
 
@@ -123,4 +119,3 @@ class Policy_VAE(nn.Module):
         loss = recon_loss + KLD
 
         return loss
-    
