@@ -1,8 +1,8 @@
 saved_model/
-<<<<<<< HEAD
+wandb/
+
 __pycache__/
 __pycache__/
-=======
 .vscode/
 .DS_Store
 # Byte-compiled / optimized / DLL files
@@ -176,4 +176,3 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
->>>>>>> 6c1ecf7dfbcb20e67bc2a7ff9c7f0eee84e282f6

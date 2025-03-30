@@ -6,10 +6,22 @@ from collections import deque
 from animator import Animator
 from policy import Policy_VAE
 from environment import Environment
+import wandb
 
+def reinforce(policy, env : Environment, optimizer:torch.optim.Adam, n_training_episodes, max_t, gamma, print_every, learning_rate):
 
-def reinforce(policy, env : Environment, optimizer, n_training_episodes, max_t, gamma, print_every):
-    anim = Animator(xlabel = "n_training_episodes", ylabel = "avg_score", legend = ["score"])
+    run = wandb.init(
+        entity = "ducanh2002add-hanoi-university-of-science-and-technology",
+        project="test-project",
+        config = {
+            "n_training_episodes": n_training_episodes,
+            "gamma": gamma,
+            "max_t": max_t, 
+            "learning_rate": learning_rate
+        }
+    )
+
+    # anim = Animator(xlabel = "n_training_episodes", ylabel = "avg_score", legend = ["score"])
     scores_deque = deque(maxlen = 100)
     scores = []
 
@@ -28,7 +40,7 @@ def reinforce(policy, env : Environment, optimizer, n_training_episodes, max_t, 
         
         scores_deque.append(sum(rewards))
         scores.append(sum(rewards))
-        print(rewards)
+        # print(rewards)
         returns = deque(maxlen = max_t)
         n_steps = len(rewards)
 
@@ -54,10 +66,11 @@ def reinforce(policy, env : Environment, optimizer, n_training_episodes, max_t, 
 
         if (i_episode % print_every == 0):
             
-            anim.add([i_episode], [np.mean(scores_deque)])
+            # anim.add([i_episode], [np.mean(scores_deque)])
             print('Episode {}\tAverage Score: {:.2f}'.format(i_episode, np.mean(scores_deque)))
-
-    return scores
+            run.log({"Average score": np.mean(scores_deque),
+                     "policy_loss": policy_loss.item()})
+    # return scores
 
 """This class sucks"""
 # class ReinforceTrainer():
