@@ -44,22 +44,6 @@ class VAE(nn.Module):
         else:
             return mu
         
-    def loss_vae(self, x, recon_x, mu, logvar):
-        recon_loss = F.mse_loss(x, recon_x)
-        KLD = -0.5 * (1 + logvar - mu ** 2 - logvar.exp()).sum(1)
-
-        # if self.debug_mode:
-        #     print("X: ", x)
-        #     print("recon_x: ", recon_x)
-        #     print("recon_loss: ", recon_loss)
-        #     print("KLD: ", KLD)
-
-        #     print("X shape: ", x.shape)
-        #     print("X_recon shape: ", recon_x.shape)
-
-        loss = recon_loss + KLD
-
-        return loss
 
 class Policy(nn.Module):
     def __init__(self, vocab, env: Environment, vae: VAE):
@@ -86,7 +70,7 @@ class Policy(nn.Module):
 
         recon_x = torch.matmul(wd, self.vae.construct)
 
-        loss = self.vae.loss_vae(x, recon_x, mu, logvar)
+        loss = self.loss_vae(x, recon_x, mu, logvar)
 
         return torch.nn.functional.softmax(wd), loss
     
@@ -113,3 +97,19 @@ class Policy(nn.Module):
 
         return loss
     
+    def loss_vae(self, x, recon_x, mu, logvar):
+        recon_loss = F.mse_loss(x, recon_x)
+        KLD = -0.5 * (1 + logvar - mu ** 2 - logvar.exp()).sum(1)
+
+        if self.debug_mode:
+            print("X: ", x)
+            print("recon_x: ", recon_x)
+            print("recon_loss: ", recon_loss)
+            print("KLD: ", KLD)
+
+            print("X shape: ", x.shape)
+            print("X_recon shape: ", recon_x.shape)
+
+        loss = recon_loss + KLD
+
+        return loss
