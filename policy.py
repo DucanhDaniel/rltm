@@ -82,7 +82,7 @@ class Policy(nn.Module):
         x_norm = x / x.sum(1, keepdim = True)
         mu, logvar = self.vae.encode(x_norm)
 
-        wd = self.vae.reparameterize(mu, logvar)
+        wd = torch.nn.functional.softmax(self.reparameterize(mu, logvar), dim = 1)
 
         recon_x = torch.matmul(wd, self.vae.construct)
 
