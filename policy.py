@@ -8,11 +8,11 @@ import torch.nn.functional as F
 
 
 class VAE(nn.Module):
-    def __init__(self, vocab_size, embed_size=768, n_hiddens=1024, dropout=0., pretrained_WE=None):
+    def __init__(self, vocab_size, embed_size=768, hidden_size=1024, dropout=0., pretrained_WE=None):
         super(VAE, self).__init__()
         self.vocab_size = vocab_size
         self.embed_size = embed_size
-        self.n_hiddens = n_hiddens
+        self.hidden_size = hidden_size
         
         if pretrained_WE is None:
             self.construct = nn.Parameter(torch.randn((self.vocab_size, embed_size)))
@@ -21,16 +21,16 @@ class VAE(nn.Module):
             
         # Encoder 
         self.encoder = nn.Module(
-            nn.Linear(embed_size, n_hiddens),
+            nn.Linear(embed_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(n_hiddens, n_hiddens),
+            nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
             nn.Dropout(dropout)
         )
         
         # Latent space
-        self.fc1 = nn.Linear(n_hiddens, vocab_size) # Mean
-        self.fc2 = nn.Linear(n_hiddens, vocab_size) # Log variance
+        self.fc1 = nn.Linear(hidden_size, vocab_size) # Mean
+        self.fc2 = nn.Linear(hidden_size, vocab_size) # Log variance
         
     def encode(self, x):
         z = self.encoder(x)
@@ -43,6 +43,7 @@ class VAE(nn.Module):
             return mu + (eps * std)
         else:
             return mu
+        
         
 
 class Policy(nn.Module):
